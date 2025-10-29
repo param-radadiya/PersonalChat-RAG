@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -55,9 +54,14 @@ const SharedChatLoader: React.FC = () => {
     }, [data, setFiles, setSessions, navigate]);
     
     return (
-        <div className="flex justify-center items-center h-screen">
-            <div className="text-center">
+        <div className="flex justify-center items-center h-screen bg-slate-100">
+            <div className="text-center text-slate-600">
                 <p className="text-xl">Loading shared chat...</p>
+                <div className="flex items-center justify-center gap-2 mt-4">
+                    <div className="w-3 h-3 bg-indigo-400 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
+                    <div className="w-3 h-3 bg-indigo-400 rounded-full animate-pulse [animation-delay:-0.15s]"></div>
+                    <div className="w-3 h-3 bg-indigo-400 rounded-full animate-pulse"></div>
+                </div>
             </div>
         </div>
     );
@@ -70,7 +74,7 @@ function App() {
   return (
     <AppContext.Provider value={{ files, setFiles, sessions, setSessions }}>
       <HashRouter>
-        <div className="min-h-screen bg-gray-900 text-gray-100 font-sans">
+        <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
           <Header />
           <Routes>
             <Route path="/" element={<Navigate to="/admin" replace />} />

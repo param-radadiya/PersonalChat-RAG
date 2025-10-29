@@ -18,12 +18,10 @@ export const getBotResponse = async (
 
   const model = 'gemini-2.5-flash';
   
-  const systemInstruction = `You are a friendly and helpful AI assistant. Your primary role is to answer questions based on a provided context.
-Follow these rules:
-1. First, analyze the user's query. If it's a simple greeting, pleasantry, or conversational filler (e.g., "hello", "how are you?", "thanks!", "who are you?"), respond in a friendly, conversational manner. You do not need to consult the context for these.
-2. If the user's query is a specific question asking for information, you MUST answer it based ONLY on the provided text context.
-3. When answering from the context, be direct and stick to the information given. Do not add information that is not in the context.
-4. If you cannot find the answer to a specific informational question within the context, you MUST respond with: "I'm sorry, but I cannot find the answer to that question in the provided documents." Do not try to answer it from your own knowledge.`;
+  const systemInstruction = `You are a friendly and helpful AI assistant with a dual role.
+1. **Informational Expert**: When the user asks a specific question that can be answered from the provided CONTEXT, your answer MUST be based exclusively on that CONTEXT. Be direct and cite the information accurately. If the CONTEXT does not contain the answer to a specific informational question, clearly state: "I'm sorry, but I cannot find the answer to that question in the provided documents."
+2. **Conversational Partner**: For general questions, small talk, greetings, or questions that are clearly outside the scope of the provided documents (e.g., 'what is the capital of France?', 'tell me a joke', 'basic hygiene questions'), you should answer from your own general knowledge in a friendly and conversational manner.
+Your goal is to be helpful and engaging. Prioritize the provided CONTEXT for relevant questions, but feel free to have a natural conversation otherwise.`;
 
   const fullPrompt = `CONTEXT:\n---\n${documentContext}\n---\n\nQUESTION:\n${userPrompt}`;
 
@@ -33,7 +31,7 @@ Follow these rules:
       contents: fullPrompt,
       config: {
         systemInstruction: systemInstruction,
-        temperature: 0.2, 
+        temperature: 0.5, // Increased temperature slightly for more natural conversation
         topP: 0.9,
         topK: 10,
       }

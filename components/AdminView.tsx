@@ -1,7 +1,6 @@
-
 import React, { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../App';
-import { AppContextType, UploadedFile, ChatSession } from '../types';
+import { AppContextType, UploadedFile, ChatSession, Message } from '../types';
 import { UploadIcon, FileIcon, TrashIcon, PlusIcon, ChatBubbleIcon, EyeIcon, PencilIcon } from './icons';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,13 +10,13 @@ declare var pdfjsLib: any;
 const FileViewerModal: React.FC<{ file: UploadedFile; onClose: () => void }> = ({ file, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-indigo-400 truncate">{file.name}</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">&times;</button>
+            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col text-slate-800" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-slate-200 flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-indigo-600 truncate">{file.name}</h3>
+                    <button onClick={onClose} className="text-slate-500 hover:text-slate-800">&times;</button>
                 </div>
-                <div className="p-4 overflow-y-auto">
-                    <pre className="text-sm text-gray-300 whitespace-pre-wrap font-sans">{file.content}</pre>
+                <div className="p-4 overflow-y-auto bg-slate-50 rounded-b-lg">
+                    <pre className="text-sm text-slate-600 whitespace-pre-wrap font-sans">{file.content}</pre>
                 </div>
             </div>
         </div>
@@ -38,9 +37,9 @@ const AdminView: React.FC = () => {
       const fileList = Array.from(event.target.files);
       const newFiles: UploadedFile[] = [];
 
-      // FIX: The left-hand side of a 'for...of' statement cannot use a type annotation.
-      // The type of `file` is correctly inferred from `fileList`.
-      for (const file of fileList) {
+      // FIX: The `file` object was being inferred as `unknown`. Casting `fileList`
+      // to `File[]` ensures `file` is correctly typed as `File`, fixing access errors.
+      for (const file of fileList as File[]) {
         let content = '';
         const extension = file.name.split('.').pop()?.toLowerCase();
 
@@ -86,10 +85,23 @@ const AdminView: React.FC = () => {
 
   const createNewChat = () => {
     const newSessionId = `chat-${Date.now()}`;
+    
+    const documentNames = files.map(f => `"${f.name}"`).join(', ');
+    const welcomeText = files.length > 0 
+      ? `Hi there! I'm ready to help. You can ask me questions about the following documents: ${documentNames}, or we can discuss a general topic. How can I assist you today?`
+      : `Hi there! I'm ready to help. Please note that no documents have been uploaded yet, so I'll be answering from my general knowledge. How can I assist you today?`;
+      
+    const initialBotMessage: Message = {
+      id: `msg-bot-${Date.now()}`,
+      text: welcomeText,
+      sender: 'bot',
+      timestamp: Date.now(),
+    };
+
     const newSession: ChatSession = {
       id: newSessionId,
       title: `New Chat Session`,
-      messages: [],
+      messages: [initialBotMessage],
       createdAt: Date.now(),
     };
     setSessions(prev => [newSession, ...prev]);
@@ -125,35 +137,35 @@ const AdminView: React.FC = () => {
   return (
     <>
       {viewingFile && <FileViewerModal file={viewingFile} onClose={() => setViewingFile(null)} />}
-      <div className="container mx-auto p-4 pt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-8">
-              <section className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                  <h2 className="text-2xl font-bold mb-4 text-indigo-400">Manage Database</h2>
-                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                      <UploadIcon className="mx-auto h-12 w-12 text-gray-500" />
-                      <label htmlFor="file-upload" className={`mt-4 inline-block text-white font-bold py-2 px-4 rounded-lg transition-colors ${isProcessing ? 'bg-gray-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer'}`}>
+      <div className="container mx-auto p-4 pt-24 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+              <section className="bg-white p-6 rounded-xl shadow-lg shadow-blue-500/5">
+                  <h2 className="text-2xl font-bold mb-4 text-indigo-600">Manage Database</h2>
+                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
+                      <UploadIcon className="mx-auto h-12 w-12 text-slate-400" />
+                      <label htmlFor="file-upload" className={`mt-4 inline-block text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 ${isProcessing ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30'}`}>
                           {isProcessing ? 'Processing...' : 'Upload Files'}
                       </label>
                       <input id="file-upload" type="file" multiple accept=".txt,.md,.csv,.pdf,.docx" className="hidden" onChange={handleFileChange} disabled={isProcessing} />
-                      <p className="mt-2 text-sm text-gray-400">Upload .txt, .md, .csv, .pdf, or .docx files.</p>
+                      <p className="mt-2 text-sm text-slate-500">Upload .txt, .md, .csv, .pdf, or .docx files.</p>
                   </div>
                   <div className="mt-6">
-                      <h3 className="text-lg font-semibold mb-2">Uploaded Files:</h3>
+                      <h3 className="text-lg font-semibold mb-2 text-slate-700">Uploaded Files:</h3>
                       {files.length === 0 ? (
-                          <p className="text-gray-400">No files uploaded yet.</p>
+                          <p className="text-slate-500">No files uploaded yet.</p>
                       ) : (
                           <ul className="space-y-2 max-h-60 overflow-y-auto pr-2">
                           {files.map(file => (
-                              <li key={file.id} className="flex items-center justify-between bg-gray-700 p-3 rounded-md group">
+                              <li key={file.id} className="flex items-center justify-between bg-slate-50 hover:bg-slate-100 p-3 rounded-md group transition-colors">
                               <div className="flex items-center gap-3 overflow-hidden">
-                                  <FileIcon className="h-5 w-5 text-indigo-400 flex-shrink-0" />
-                                  <span className="text-sm font-medium truncate" title={file.name}>{file.name}</span>
+                                  <FileIcon className="h-5 w-5 text-indigo-500 flex-shrink-0" />
+                                  <span className="text-sm font-medium text-slate-700 truncate" title={file.name}>{file.name}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <button onClick={() => setViewingFile(file)} className="text-sky-400 hover:text-sky-300 opacity-0 group-hover:opacity-100 transition-opacity" title="View Content">
+                                <button onClick={() => setViewingFile(file)} className="text-sky-500 hover:text-sky-600 opacity-0 group-hover:opacity-100 transition-opacity" title="View Content">
                                     <EyeIcon className="h-5 w-5" />
                                 </button>
-                                <button onClick={() => removeFile(file.id)} className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete File">
+                                <button onClick={() => removeFile(file.id)} className="text-red-500 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete File">
                                     <TrashIcon className="h-5 w-5" />
                                 </button>
                               </div>
@@ -164,21 +176,21 @@ const AdminView: React.FC = () => {
                   </div>
               </section>
               
-              <section className="bg-gray-800 p-6 rounded-lg shadow-lg">
+              <section className="bg-white p-6 rounded-xl shadow-lg shadow-blue-500/5">
                   <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-2xl font-bold text-indigo-400">Manage Chats</h2>
-                      <button onClick={createNewChat} className="flex items-center gap-2 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                      <h2 className="text-2xl font-bold text-indigo-600">Manage Chats</h2>
+                      <button onClick={createNewChat} className="flex items-center gap-2 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-all duration-300 shadow-md shadow-green-500/20 hover:shadow-lg hover:shadow-green-500/30">
                           <PlusIcon className="h-5 w-5" /> New Chat
                       </button>
                   </div>
                   {sessions.length === 0 ? (
-                      <p className="text-gray-400">No chat sessions started yet.</p>
+                      <p className="text-slate-500">No chat sessions started yet.</p>
                   ) : (
                       <ul className="space-y-3 max-h-80 overflow-y-auto pr-2">
                       {sessions.map(session => (
-                          <li key={session.id} className="flex items-center justify-between bg-gray-700 p-3 rounded-md hover:bg-gray-600 transition-colors group">
+                          <li key={session.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-md hover:shadow-md hover:border-slate-300 border border-transparent transition-all duration-200 group">
                             <div className="flex items-center gap-3 w-full" >
-                                <ChatBubbleIcon className="h-5 w-5 text-green-400 flex-shrink-0" />
+                                <ChatBubbleIcon className="h-5 w-5 text-green-500 flex-shrink-0" />
                                 <div className="flex-grow" onClick={() => editingSessionId !== session.id && navigate(`/chat/${session.id}`)}>
                                   {editingSessionId === session.id ? (
                                     <input
@@ -187,13 +199,13 @@ const AdminView: React.FC = () => {
                                       onChange={(e) => setEditingTitle(e.target.value)}
                                       onBlur={handleSaveTitle}
                                       onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') setEditingSessionId(null); }}
-                                      className="bg-gray-600 text-white p-1 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                      className="bg-slate-100 text-slate-800 p-1 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                       autoFocus
                                     />
                                   ) : (
                                     <>
-                                      <p className="font-semibold cursor-pointer">{session.title}</p>
-                                      <p className="text-xs text-gray-400 cursor-pointer">
+                                      <p className="font-semibold text-slate-800 cursor-pointer">{session.title}</p>
+                                      <p className="text-xs text-slate-500 cursor-pointer">
                                           {new Date(session.createdAt).toLocaleString()} - {session.messages.length} messages
                                       </p>
                                     </>
@@ -201,10 +213,10 @@ const AdminView: React.FC = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => handleStartEdit(session)} className="text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleStartEdit(session)} className="text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <PencilIcon className="h-5 w-5" />
                                 </button>
-                                <button onClick={() => deleteSession(session.id)} className="text-red-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => deleteSession(session.id)} className="text-red-500 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <TrashIcon className="h-5 w-5" />
                                 </button>
                             </div>
@@ -214,21 +226,21 @@ const AdminView: React.FC = () => {
                   )}
               </section>
           </div>
-          <div className="md:col-span-1">
-              <aside className="bg-gray-800 p-6 rounded-lg shadow-lg sticky top-24">
-                  <h2 className="text-2xl font-bold mb-4 text-indigo-400 border-b border-gray-700 pb-2">Analysis</h2>
+          <div className="lg:col-span-1">
+              <aside className="bg-white p-6 rounded-xl shadow-lg shadow-blue-500/5 sticky top-24">
+                  <h2 className="text-2xl font-bold mb-4 text-indigo-600 border-b border-slate-200 pb-2">Analysis</h2>
                   <div className="space-y-4 mt-4">
-                      <div className="flex justify-between items-center bg-gray-700 p-3 rounded-md">
-                          <span className="font-medium text-gray-300">Knowledge Files</span>
-                          <span className="font-bold text-2xl text-indigo-400">{analysisStats.fileCount}</span>
+                      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
+                          <span className="font-medium text-slate-600">Knowledge Files</span>
+                          <span className="font-bold text-2xl text-indigo-600">{analysisStats.fileCount}</span>
                       </div>
-                      <div className="flex justify-between items-center bg-gray-700 p-3 rounded-md">
-                          <span className="font-medium text-gray-300">Chat Sessions</span>
-                          <span className="font-bold text-2xl text-indigo-400">{analysisStats.sessionCount}</span>
+                      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
+                          <span className="font-medium text-slate-600">Chat Sessions</span>
+                          <span className="font-bold text-2xl text-indigo-600">{analysisStats.sessionCount}</span>
                       </div>
-                      <div className="flex justify-between items-center bg-gray-700 p-3 rounded-md">
-                          <span className="font-medium text-gray-300">Avg. Msgs / Session</span>
-                          <span className="font-bold text-2xl text-indigo-400">{analysisStats.avgMessages}</span>
+                      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
+                          <span className="font-medium text-slate-600">Avg. Msgs / Session</span>
+                          <span className="font-bold text-2xl text-indigo-600">{analysisStats.avgMessages}</span>
                       </div>
                   </div>
               </aside>
