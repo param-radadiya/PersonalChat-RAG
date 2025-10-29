@@ -1,0 +1,7 @@
+{
+  "name": "PersonaChat RAG",
+  "description": "An application that allows an admin to create a personalized chatbot based on uploaded documents. The chatbot answers questions using a Retrieval-Augmented Generation (RAG) system powered by the Gemini API, ensuring responses are grounded in the provided data.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
