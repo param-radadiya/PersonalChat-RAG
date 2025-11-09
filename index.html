@@ -7,17 +7,17 @@
     <title>Chat with Param (RAG)</title>
     <!--
       NOTE FOR DEPLOYMENT & OFFLINE USE:
-      This application is currently configured for a special development environment that compiles TypeScript/JSX in real-time.
-      This setup is not intended for a production server or offline use, which is why you may see a "white screen".
+      This application is now configured to use Babel Standalone, an in-browser transpiler.
+      This allows you to host these files on any simple web server and run the application
+      without seeing a "white screen". It works by compiling the modern JavaScript/JSX (in .tsx files)
+      directly in the user's browser.
 
-      For independent, industry-standard hosting, you need to set up a build process using a tool like Vite, Webpack, or Create React App. This process will:
-      1. Compile all .tsx files into standard JavaScript that browsers can understand.
-      2. Bundle all your code and dependencies (from CDNs) into optimized files.
-      3. Generate a final `index.html` that correctly points to these bundled scripts.
+      While this method is great for simple hosting and demonstrations, it's not recommended for
+      large-scale production applications because:
+      1. Performance: The user's browser has to download the compiler and compile the code on every visit, which is slower than serving pre-compiled code.
+      2. Optimization: It misses out on bundling and minification that build tools like Vite or Webpack provide.
 
-      After building, the application must be served by a web server (like Nginx, Apache, or a simple Node.js server).
-      Opening the `index.html` file directly from your computer (e.g., file://...) will not work due to browser security
-      restrictions on JavaScript modules.
+      For a production-ready application, the industry-standard approach is to set up a build process locally.
     -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -40,9 +40,15 @@
   }
 }
 </script>
+<!-- Added Babel Standalone for in-browser JSX/TSX transpilation -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
   <body class="bg-slate-100 text-slate-800">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <!-- 
+      This script is now processed by Babel Standalone. The `type="text/babel"` activates the transpiler,
+      and `data-type="module"` ensures it correctly handles ES module imports and exports defined in the importmap.
+    -->
+    <script type="text/babel" data-type="module" src="/index.tsx"></script>
   </body>
 </html>
