@@ -1,4 +1,4 @@
-import React, { useContext, useState, useMemo } from 'react';
+import React, { useContext, useState, useMemo, useEffect } from 'react';
 import { AppContext } from '../App';
 import { AppContextType, UploadedFile, ChatSession, Message } from '../types';
 import { UploadIcon, FileIcon, TrashIcon, PlusIcon, ChatBubbleIcon, EyeIcon, PencilIcon } from './icons';
@@ -23,13 +23,143 @@ const FileViewerModal: React.FC<{ file: UploadedFile; onClose: () => void }> = (
     );
 };
 
+const NewChatModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onCreate: (title: string, delay: number) => void;
+}> = ({ isOpen, onClose, onCreate }) => {
+  const [title, setTitle] = useState('New Chat Session');
+  const [delay, setDelay] = useState(0);
+
+  const handleCreate = () => {
+    if (!title.trim()) {
+      alert("Chat title cannot be empty.");
+      return;
+    }
+    onCreate(title, delay);
+    setTitle('New Chat Session');
+    setDelay(0);
+  };
+  
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] p-4" onClick={onClose}>
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+                <h3 className="text-xl font-bold text-indigo-600 mb-6">Create New Chat</h3>
+                <div className="space-y-5">
+                    <div>
+                        <label htmlFor="chat-title" className="block text-sm font-medium text-slate-700 mb-1">Chat Title</label>
+                        <input
+                            type="text"
+                            id="chat-title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="w-full bg-slate-100 border-slate-300 border text-slate-800 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition"
+                            placeholder="e.g., Project Discussion"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="chat-delay" className="block text-sm font-medium text-slate-700 mb-1">Message Cooldown (seconds)</label>
+                        <input
+                            type="number"
+                            id="chat-delay"
+                            min="0"
+                            value={delay}
+                            onChange={(e) => setDelay(Math.max(0, Number(e.target.value)))}
+                            className="w-full bg-slate-100 border-slate-300 border text-slate-800 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition"
+                        />
+                        <p className="text-xs text-slate-500 mt-2">Set a delay after each bot response to control message frequency. Use 0 for no delay.</p>
+                    </div>
+                </div>
+            </div>
+            <div className="bg-slate-50 p-4 flex justify-end gap-3 rounded-b-xl border-t border-slate-200">
+                <button onClick={onClose} className="px-4 py-2 rounded-md text-sm font-medium text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors">
+                    Cancel
+                </button>
+                <button onClick={handleCreate} className="px-4 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-300">
+                    Create & Start Chat
+                </button>
+            </div>
+        </div>
+    </div>
+  );
+};
+
+const EditChatModal: React.FC<{
+  session: ChatSession;
+  onClose: () => void;
+  onSave: (title: string, delay: number) => void;
+}> = ({ session, onClose, onSave }) => {
+  const [title, setTitle] = useState(session.title);
+  const [delay, setDelay] = useState(session.delaySeconds || 0);
+
+  useEffect(() => {
+    setTitle(session.title);
+    setDelay(session.delaySeconds || 0);
+  }, [session]);
+
+  const handleSave = () => {
+    if (!title.trim()) {
+      alert("Chat title cannot be empty.");
+      return;
+    }
+    onSave(title.trim(), delay);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] p-4" onClick={onClose}>
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+                <h3 className="text-xl font-bold text-indigo-600 mb-6">Edit Chat</h3>
+                <div className="space-y-5">
+                    <div>
+                        <label htmlFor="edit-chat-title" className="block text-sm font-medium text-slate-700 mb-1">Chat Title</label>
+                        <input
+                            type="text"
+                            id="edit-chat-title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="w-full bg-slate-100 border-slate-300 border text-slate-800 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition"
+                            placeholder="e.g., Project Discussion"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="edit-chat-delay" className="block text-sm font-medium text-slate-700 mb-1">Message Cooldown (seconds)</label>
+                        <input
+                            type="number"
+                            id="edit-chat-delay"
+                            min="0"
+                            value={delay}
+                            onChange={(e) => setDelay(Math.max(0, Number(e.target.value)))}
+                            className="w-full bg-slate-100 border-slate-300 border text-slate-800 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition"
+                        />
+                        <p className="text-xs text-slate-500 mt-2">Set a delay after each bot response to control message frequency. Use 0 for no delay.</p>
+                    </div>
+                </div>
+            </div>
+            <div className="bg-slate-50 p-4 flex justify-end gap-3 rounded-b-xl border-t border-slate-200">
+                <button onClick={onClose} className="px-4 py-2 rounded-md text-sm font-medium text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors">
+                    Cancel
+                </button>
+                <button onClick={handleSave} className="px-4 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-300">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+  );
+};
+
+
 const AdminView: React.FC = () => {
   const { files, setFiles, sessions, setSessions } = useContext(AppContext) as AppContextType;
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [viewingFile, setViewingFile] = useState<UploadedFile | null>(null);
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState('');
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<ChatSession | null>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -37,8 +167,6 @@ const AdminView: React.FC = () => {
       const fileList = Array.from(event.target.files);
       const newFiles: UploadedFile[] = [];
 
-      // FIX: The `file` object was being inferred as `unknown`. Casting `fileList`
-      // to `File[]` ensures `file` is correctly typed as `File`, fixing access errors.
       for (const file of fileList as File[]) {
         let content = '';
         const extension = file.name.split('.').pop()?.toLowerCase();
@@ -83,7 +211,7 @@ const AdminView: React.FC = () => {
     setFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
-  const createNewChat = () => {
+  const handleCreateNewChat = (title: string, delay: number) => {
     const newSessionId = `chat-${Date.now()}`;
     
     const documentNames = files.map(f => `"${f.name}"`).join(', ');
@@ -100,11 +228,13 @@ const AdminView: React.FC = () => {
 
     const newSession: ChatSession = {
       id: newSessionId,
-      title: `New Chat Session`,
+      title: title,
       messages: [initialBotMessage],
       createdAt: Date.now(),
+      delaySeconds: delay,
     };
     setSessions(prev => [newSession, ...prev]);
+    setIsNewChatModalOpen(false);
     navigate(`/chat/${newSessionId}`);
   };
 
@@ -112,16 +242,16 @@ const AdminView: React.FC = () => {
     setSessions(prev => prev.filter(s => s.id !== sessionId));
   };
 
-  const handleStartEdit = (session: ChatSession) => {
-    setEditingSessionId(session.id);
-    setEditingTitle(session.title);
-  };
-
-  const handleSaveTitle = () => {
-    if (!editingSessionId) return;
-    setSessions(prev => prev.map(s => s.id === editingSessionId ? { ...s, title: editingTitle.trim() || "Untitled Chat" } : s));
-    setEditingSessionId(null);
-    setEditingTitle('');
+  const handleSaveEdit = (updatedTitle: string, updatedDelay: number) => {
+    if (!editingSession) return;
+    setSessions(prev => 
+      prev.map(s => 
+        s.id === editingSession.id 
+          ? { ...s, title: updatedTitle, delaySeconds: updatedDelay } 
+          : s
+      )
+    );
+    setEditingSession(null);
   };
 
   const analysisStats = useMemo(() => {
@@ -136,6 +266,14 @@ const AdminView: React.FC = () => {
 
   return (
     <>
+      <NewChatModal isOpen={isNewChatModalOpen} onClose={() => setIsNewChatModalOpen(false)} onCreate={handleCreateNewChat} />
+      {editingSession && (
+        <EditChatModal 
+          session={editingSession} 
+          onClose={() => setEditingSession(null)} 
+          onSave={handleSaveEdit}
+        />
+      )}
       {viewingFile && <FileViewerModal file={viewingFile} onClose={() => setViewingFile(null)} />}
       <div className="container mx-auto p-4 pt-24 grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
@@ -179,7 +317,7 @@ const AdminView: React.FC = () => {
               <section className="bg-white p-6 rounded-xl shadow-lg shadow-blue-500/5">
                   <div className="flex justify-between items-center mb-4">
                       <h2 className="text-2xl font-bold text-indigo-600">Manage Chats</h2>
-                      <button onClick={createNewChat} className="flex items-center gap-2 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-all duration-300 shadow-md shadow-green-500/20 hover:shadow-lg hover:shadow-green-500/30">
+                      <button onClick={() => setIsNewChatModalOpen(true)} className="flex items-center gap-2 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-all duration-300 shadow-md shadow-green-500/20 hover:shadow-lg hover:shadow-green-500/30">
                           <PlusIcon className="h-5 w-5" /> New Chat
                       </button>
                   </div>
@@ -191,32 +329,18 @@ const AdminView: React.FC = () => {
                           <li key={session.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-md hover:shadow-md hover:border-slate-300 border border-transparent transition-all duration-200 group">
                             <div className="flex items-center gap-3 w-full" >
                                 <ChatBubbleIcon className="h-5 w-5 text-green-500 flex-shrink-0" />
-                                <div className="flex-grow" onClick={() => editingSessionId !== session.id && navigate(`/chat/${session.id}`)}>
-                                  {editingSessionId === session.id ? (
-                                    <input
-                                      type="text"
-                                      value={editingTitle}
-                                      onChange={(e) => setEditingTitle(e.target.value)}
-                                      onBlur={handleSaveTitle}
-                                      onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') setEditingSessionId(null); }}
-                                      className="bg-slate-100 text-slate-800 p-1 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                      autoFocus
-                                    />
-                                  ) : (
-                                    <>
-                                      <p className="font-semibold text-slate-800 cursor-pointer">{session.title}</p>
-                                      <p className="text-xs text-slate-500 cursor-pointer">
-                                          {new Date(session.createdAt).toLocaleString()} - {session.messages.length} messages
-                                      </p>
-                                    </>
-                                  )}
+                                <div className="flex-grow cursor-pointer" onClick={() => navigate(`/chat/${session.id}`)}>
+                                    <p className="font-semibold text-slate-800">{session.title}</p>
+                                    <p className="text-xs text-slate-500">
+                                        {new Date(session.createdAt).toLocaleString()} - {session.messages.length} messages
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => handleStartEdit(session)} className="text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => setEditingSession(session)} className="text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" title="Edit Chat">
                                     <PencilIcon className="h-5 w-5" />
                                 </button>
-                                <button onClick={() => deleteSession(session.id)} className="text-red-500 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => deleteSession(session.id)} className="text-red-500 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete Chat">
                                     <TrashIcon className="h-5 w-5" />
                                 </button>
                             </div>

@@ -16,8 +16,11 @@ const ChatView: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [shareMessage, setShareMessage] = useState<string | null>(null);
+    const [cooldown, setCooldown] = useState(0);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const speechRecognitionRef = useRef<any>(null);
+    const wasLoading = useRef(false);
 
     const currentSession = sessions.find(s => s.id === sessionId);
 
@@ -44,6 +47,30 @@ const ChatView: React.FC = () => {
             };
         }
     }, []);
+    
+    // Effect to handle the start of the cooldown
+    useEffect(() => {
+        // If the state just changed from loading to not loading
+        if (wasLoading.current && !isLoading) {
+            // And if the session has a defined delay
+            if (currentSession?.delaySeconds && currentSession.delaySeconds > 0) {
+                setCooldown(currentSession.delaySeconds);
+            }
+        }
+        // Update the ref to the current loading state for the next render.
+        wasLoading.current = isLoading;
+    }, [isLoading, currentSession]);
+    
+    // Effect for the countdown timer
+    useEffect(() => {
+        if (cooldown > 0) {
+            const timer = setTimeout(() => {
+                setCooldown(c => c - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [cooldown]);
+
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,7 +80,7 @@ const ChatView: React.FC = () => {
 
     const handleSend = async () => {
         const trimmedInput = input.trim();
-        if (!trimmedInput || isLoading || !currentSession) return;
+        if (!trimmedInput || isLoading || !currentSession || cooldown > 0) return;
     
         setIsLoading(true);
         setInput('');
@@ -74,7 +101,6 @@ const ChatView: React.FC = () => {
             isLoading: true,
         };
     
-        // Add user message AND the loading bot message in one state update
         setSessions(prev => prev.map(s => 
             s.id === sessionId 
                 ? { ...s, messages: [...s.messages, userMessage, botLoadingMessage] } 
@@ -84,7 +110,7 @@ const ChatView: React.FC = () => {
         const documentContext = files.map(f => f.content).join('\n\n---\n\n');
     
         let botResponseText;
-        if (files.length === 0 && currentSession.messages.length <= 2) { // Check if it's an early message in a file-less chat
+        if (files.length === 0 && currentSession.messages.length <= 2) { 
              botResponseText = await getBotResponse(trimmedInput, "No context provided.");
         } else if (files.length === 0) {
              botResponseText = "Please upload documents in the admin panel to ask questions about them. I can still chat about general topics.";
@@ -101,7 +127,6 @@ const ChatView: React.FC = () => {
             isLoading: false,
         };
     
-        // Replace the loading message with the final one
         setSessions(prev => prev.map(s => {
             if (s.id === sessionId) {
                 return { ...s, messages: s.messages.map(m => m.id === botMessageId ? finalBotMessage : m) };
@@ -194,28 +219,33 @@ const ChatView: React.FC = () => {
 
             <footer className="p-4 bg-white/80 backdrop-blur-sm border-t border-slate-200 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">
                 <div className="container mx-auto">
+                    {cooldown > 0 && (
+                        <div className="text-center text-sm text-indigo-600 mb-2 font-medium">
+                            Next message in {cooldown} second{cooldown > 1 ? 's' : ''}...
+                        </div>
+                    )}
                     <div className="relative flex items-center gap-2">
                         <textarea
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                            placeholder="Ask a question..."
-                            className="w-full bg-slate-100 border-slate-200 border text-slate-800 rounded-lg p-3 pr-28 resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow"
+                            placeholder={cooldown > 0 ? "Please wait for the cooldown..." : "Ask a question..."}
+                            className="w-full bg-slate-100 border-slate-200 border text-slate-800 rounded-lg p-3 pr-28 resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow disabled:bg-slate-200 disabled:cursor-not-allowed"
                             rows={1}
-                            disabled={isLoading}
+                            disabled={isLoading || cooldown > 0}
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button 
                                 onClick={handleVoiceInput}
-                                disabled={isLoading}
-                                className={`p-2 rounded-full ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-200 hover:bg-slate-300 text-slate-600'} transition-colors`}
+                                disabled={isLoading || cooldown > 0}
+                                className={`p-2 rounded-full ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-200 hover:bg-slate-300 text-slate-600'} transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed`}
                                 title="Ask with voice"
                             >
                                 <MicrophoneIcon className="w-5 h-5" />
                             </button>
                             <button 
                                 onClick={handleSend}
-                                disabled={isLoading || !input.trim()}
+                                disabled={isLoading || !input.trim() || cooldown > 0}
                                 className="p-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30"
                                 title="Send message"
                             >

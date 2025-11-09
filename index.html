@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat with Param (RAG)</title>
+    <!--
+      NOTE FOR DEPLOYMENT & OFFLINE USE:
+      This application is currently configured for a special development environment that compiles TypeScript/JSX in real-time.
+      This setup is not intended for a production server or offline use, which is why you may see a "white screen".
+
+      For independent, industry-standard hosting, you need to set up a build process using a tool like Vite, Webpack, or Create React App. This process will:
+      1. Compile all .tsx files into standard JavaScript that browsers can understand.
+      2. Bundle all your code and dependencies (from CDNs) into optimized files.
+      3. Generate a final `index.html` that correctly points to these bundled scripts.
+
+      After building, the application must be served by a web server (like Nginx, Apache, or a simple Node.js server).
+      Opening the `index.html` file directly from your computer (e.g., file://...) will not work due to browser security
+      restrictions on JavaScript modules.
+    -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.18/mammoth.browser.min.js"></script>
